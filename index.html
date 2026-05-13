@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOL by Meliá · Guest Feedback</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --gold:#B8972E;--gold-light:#D4B04A;--gold-dark:#8A6E1A;
+  --navy:#0A1628;--navy-mid:#132040;--navy-light:#1E3055;
+  --white:#FFFFFF;--muted:#9BA8BC;--body:#D0D8E8;
+  --danger:#C94040;--ok:#2E7D52;
+  --r:6px;--rl:10px;
+  --fd:'Cormorant Garamond',serif;--fu:'Jost',sans-serif;
+}
+html,body{width:100%;height:100%;font-family:var(--fu);background:var(--navy);color:var(--body);overflow:hidden;}
+#login{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:999;}
+.lbox{background:var(--navy-mid);border:1px solid rgba(184,151,46,.3);border-radius:var(--rl);padding:48px 40px;width:360px;text-align:center;}
+.llogo{font-family:var(--fd);font-size:28px;font-weight:600;color:var(--gold);letter-spacing:2px;margin-bottom:4px;}
+.lsub{font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:36px;}
+.lbox input{width:100%;background:var(--navy-light);border:1px solid rgba(184,151,46,.2);border-radius:var(--r);padding:12px 14px;font-family:var(--fu);font-size:14px;color:var(--white);margin-bottom:12px;outline:none;transition:border-color .2s;}
+.lbox input:focus{border-color:var(--gold);}
+.lbox input::placeholder{color:var(--muted);}
+.btn-login{width:100%;background:var(--gold);border:none;border-radius:var(--r);padding:13px;font-family:var(--fu);font-size:13px;font-weight:600;color:var(--navy);cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:background .2s;}
+.btn-login:hover{background:var(--gold-light);}
+.lerr{color:var(--danger);font-size:12px;margin-top:10px;min-height:16px;}
+#app{display:none;height:100vh;flex-direction:column;}
+.bar{background:var(--navy-mid);border-bottom:1px solid rgba(184,151,46,.25);display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:60px;flex-shrink:0;}
+.brand{font-family:var(--fd);font-size:20px;color:var(--gold);letter-spacing:2px;}
+.topright{display:flex;align-items:center;gap:20px;}
+.user-label{font-size:12px;color:var(--muted);}
+.btn-logout{background:transparent;border:1px solid rgba(184,151,46,.3);border-radius:var(--r);padding:6px 14px;font-family:var(--fu);font-size:12px;color:var(--gold);cursor:pointer;transition:all .2s;}
+.btn-logout:hover{background:rgba(184,151,46,.1);}
+.nav{background:var(--navy-mid);border-bottom:1px solid rgba(255,255,255,.06);display:flex;padding:0 28px;flex-shrink:0;}
+.nav-item{padding:14px 20px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;font-weight:500;}
+.nav-item:hover{color:var(--body);}
+.nav-item.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content{flex:1;overflow-y:auto;padding:32px 28px;}
+.tab{display:none;}
+.tab.active{display:block;}
+.form-title{font-family:var(--fd);font-size:26px;font-weight:500;color:var(--gold);margin-bottom:6px;letter-spacing:1px;}
+.form-sub{font-size:12px;color:var(--muted);letter-spacing:1px;margin-bottom:32px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.ffield{margin-bottom:16px;}
+.ffield label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-weight:500;}
+.ffield input,.ffield select,.ffield textarea{width:100%;background:var(--navy-mid);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);padding:11px 14px;font-family:var(--fu);font-size:13px;color:var(--white);outline:none;transition:border-color .2s;}
+.ffield select{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23B8972E' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
+.ffield input:focus,.ffield select:focus,.ffield textarea:focus{border-color:var(--gold);}
+.ffield input::placeholder,.ffield textarea::placeholder{color:rgba(155,168,188,.6);}
+.ffield select option{background:var(--navy-mid);color:var(--white);}
+.ffield textarea{resize:vertical;min-height:80px;line-height:1.6;}
+input[type="date"],input[type="time"]{color-scheme:dark;}
+input[type="date"]::-webkit-calendar-picker-indicator,input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(.7) sepia(1) saturate(3) hue-rotate(10deg);}
+.btn-submit{background:var(--gold);border:none;border-radius:var(--r);padding:13px 32px;font-family:var(--fu);font-size:12px;font-weight:600;color:var(--navy);cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;transition:background .2s;margin-top:6px;}
+.btn-submit:hover{background:var(--gold-light);}
+.smsg{font-size:12px;margin-top:12px;min-height:16px;}
+.smsg.ok{color:#4CAF7D;}
+.smsg.err{color:var(--danger);}
+.shead{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px;}
+.stitle{font-family:var(--fd);font-size:26px;font-weight:500;color:var(--gold);}
+.btn-out{background:transparent;border:1px solid rgba(184,151,46,.4);border-radius:var(--r);padding:9px 18px;font-family:var(--fu);font-size:12px;color:var(--gold);cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;}
+.btn-out:hover{background:rgba(184,151,46,.1);}
+.fbar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.fbar select,.fbar input{background:var(--navy-mid);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);padding:9px 14px;font-family:var(--fu);font-size:12px;color:var(--body);outline:none;}
+.fbar select{-webkit-appearance:none;padding-right:28px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23B8972E' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
+.fbar select option{background:var(--navy-mid);}
+.rtable{width:100%;border-collapse:collapse;}
+.rtable th{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:10px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08);font-weight:500;}
+.rtable td{padding:11px 12px;font-size:12px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:top;}
+.rtable tr:hover td{background:rgba(184,151,46,.04);}
+.badge{display:inline-block;padding:3px 9px;border-radius:16px;font-size:10px;font-weight:500;}
+.b-bay{background:rgba(30,100,160,.25);color:#7BB8E8;}
+.b-pal{background:rgba(184,151,46,.2);color:var(--gold-light);}
+.b-mare{background:rgba(46,125,82,.25);color:#6DC495;}
+.acts{display:flex;gap:6px;}
+.abtn{background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:3px;padding:4px 9px;font-family:var(--fu);font-size:10px;color:var(--muted);cursor:pointer;transition:all .2s;}
+.abtn:hover{border-color:var(--gold);color:var(--gold);}
+.abtn.del:hover{border-color:var(--danger);color:var(--danger);}
+.empty{text-align:center;padding:60px;color:var(--muted);font-size:13px;}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:500;}
+.modal.open{display:flex;}
+.mbox{background:var(--navy-mid);border:1px solid rgba(184,151,46,.3);border-radius:var(--rl);padding:32px;width:500px;max-height:88vh;overflow-y:auto;}
+.mtitle{font-family:var(--fd);font-size:22px;color:var(--gold);margin-bottom:22px;}
+.macts{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
+.mbtn-cancel{background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:var(--r);padding:10px 20px;font-family:var(--fu);font-size:12px;color:var(--muted);cursor:pointer;}
+.mbtn-save{background:var(--gold);border:none;border-radius:var(--r);padding:10px 24px;font-family:var(--fu);font-size:12px;font-weight:600;color:var(--navy);cursor:pointer;}
+.mbtn-save:hover{background:var(--gold-light);}
+.an-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;}
+.an-card{background:var(--navy-mid);border:1px solid rgba(184,151,46,.15);border-radius:var(--rl);padding:20px 22px;}
+.an-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.an-val{font-family:var(--fd);font-size:32px;font-weight:600;color:var(--gold);}
+.chart-wrap{background:var(--navy-mid);border:1px solid rgba(184,151,46,.15);border-radius:var(--rl);padding:22px;margin-bottom:18px;}
+.chart-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:18px;}
+.ai-box{background:rgba(184,151,46,.06);border:1px solid rgba(184,151,46,.25);border-radius:var(--rl);padding:28px;margin-top:8px;}
+.ai-lbl{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
+.ai-text{font-size:13px;line-height:1.8;color:var(--body);}
+.btn-ai{background:var(--navy-light);border:1px solid rgba(184,151,46,.4);border-radius:var(--r);padding:10px 20px;font-family:var(--fu);font-size:11px;color:var(--gold);cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;}
+.btn-ai:hover{background:rgba(184,151,46,.12);}
+.adm-sec{background:var(--navy-mid);border:1px solid rgba(184,151,46,.15);border-radius:var(--rl);padding:26px;margin-bottom:20px;}
+.adm-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:16px;font-weight:500;}
+.user-item{display:flex;align-items:center;justify-content:space-between;background:var(--navy-light);border-radius:var(--r);padding:10px 14px;margin-bottom:8px;}
+.user-name{font-size:13px;font-weight:500;color:var(--white);}
+.ubadge{font-size:9px;background:rgba(184,151,46,.2);color:var(--gold);padding:2px 7px;border-radius:8px;}
+.arow{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;}
+.danger-zone{border-color:rgba(201,64,64,.3);}
+.danger-zone .adm-title{color:#E07070;}
+.btn-danger{background:transparent;border:1px solid rgba(201,64,64,.5);border-radius:var(--r);padding:10px 20px;font-family:var(--fu);font-size:11px;color:#E07070;cursor:pointer;letter-spacing:1px;text-transform:uppercase;}
+.btn-danger:hover{background:rgba(201,64,64,.1);}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.srow:last-child{border:none;}
+.slabel{font-size:13px;color:var(--body);}
+.sdesc{font-size:11px;color:var(--muted);margin-top:2px;}
+.sinput{background:var(--navy-light);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);padding:8px 12px;font-family:var(--fu);font-size:12px;color:var(--white);outline:none;width:200px;}
+.sinput:focus{border-color:var(--gold);}
+.btn-save-s{background:var(--gold);border:none;border-radius:var(--r);padding:8px 16px;font-family:var(--fu);font-size:11px;font-weight:600;color:var(--navy);cursor:pointer;}
+.msg{font-size:11px;margin-top:8px;min-height:14px;}
+.msg.ok{color:#4CAF7D;}
+.msg.err{color:var(--danger);}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="lbox">
+    <div class="llogo">SOL by Meliá</div>
+    <div class="lsub">Guest Feedback System</div>
+    <input type="text" id="login-user" placeholder="Потребителско име" autocomplete="off">
+    <input type="password" id="login-pass" placeholder="Парола">
+    <button class="btn-login" onclick="doLogin()">Вход</button>
+    <div class="lerr" id="login-error"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="bar">
+    <div class="brand" id="topbar-title">SOL by Meliá · Несебър</div>
+    <div class="topright">
+      <span class="user-label" id="user-display"></span>
+      <button class="btn-logout" onclick="doLogout()">Изход</button>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="nav-item active" onclick="switchTab('home',this)">Начало</div>
+    <div class="nav-item" onclick="switchTab('history',this)">История</div>
+    <div class="nav-item" onclick="switchTab('analysis',this)">Анализ</div>
+    <div class="nav-item" id="admin-item" style="display:none;" onclick="switchTab('admin',this)">Администратор</div>
+  </div>
+  <div class="content">
+
+    <!-- НАЧАЛО -->
+    <div class="tab active" id="tab-home">
+      <div class="form-title">Нов запис</div>
+      <div class="form-sub">Въведете информация от разговора с госта</div>
+      <div class="frow">
+        <div class="ffield"><label>Хотел</label><select id="f-hotel"><option value="">— Изберете —</option></select></div>
+        <div class="ffield"><label>Дата</label><input type="date" id="f-date"></div>
+      </div>
+      <div class="ffield" style="max-width:200px;"><label>Час</label><input type="time" id="f-time"></div>
+      <div class="ffield"><label>Проблем</label><textarea id="f-problem" placeholder="Опишете проблема..."></textarea></div>
+      <div class="ffield"><label>Причина</label><textarea id="f-cause" placeholder="Каква е причината..."></textarea></div>
+      <div class="ffield"><label>Решение</label><textarea id="f-solution" placeholder="Как беше разрешено..."></textarea></div>
+      <button class="btn-submit" onclick="saveRecord()">Запази запис</button>
+      <div class="smsg" id="save-msg"></div>
+    </div>
+
+    <!-- ИСТОРИЯ -->
+    <div class="tab" id="tab-history">
+      <div class="shead">
+        <div class="stitle">История на записите</div>
+        <button class="btn-out" onclick="exportWord()">↓ Изтегли Word</button>
+      </div>
+      <div class="fbar">
+        <select id="flt-hotel" onchange="loadHistory()"><option value="">Всички хотели</option></select>
+        <input type="date" id="flt-from" onchange="loadHistory()">
+        <input type="date" id="flt-to" onchange="loadHistory()">
+        <input type="text" id="flt-search" oninput="loadHistory()" placeholder="Търсене...">
+      </div>
+      <div id="hist-cont"></div>
+    </div>
+
+    <!-- АНАЛИЗ -->
+    <div class="tab" id="tab-analysis">
+      <div class="shead">
+        <div class="stitle">Анализ и тенденции</div>
+        <button class="btn-ai" onclick="generateAI()">✦ AI Обобщение</button>
+      </div>
+      <div class="an-grid" id="an-stats"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;">
+        <div class="chart-wrap"><div class="chart-lbl">По хотел</div><div style="position:relative;height:200px;"><canvas id="ch-hotel" role="img" aria-label="По хотел"></canvas></div></div>
+        <div class="chart-wrap"><div class="chart-lbl">По час на деня</div><div style="position:relative;height:200px;"><canvas id="ch-hour" role="img" aria-label="По час"></canvas></div></div>
+      </div>
+      <div class="chart-wrap"><div class="chart-lbl">Записи по дни (последни 30)</div><div style="position:relative;height:160px;"><canvas id="ch-days" role="img" aria-label="По дни"></canvas></div></div>
+      <div class="ai-box" style="margin-top:20px;">
+        <div class="ai-lbl">✦ AI Анализ</div>
+        <div class="ai-text" id="ai-out"><span style="color:var(--muted);font-style:italic;">Натиснете "AI Обобщение" за автоматичен анализ...</span></div>
+      </div>
+    </div>
+
+    <!-- АДМИНИСТРАТОР -->
+    <div class="tab" id="tab-admin">
+      <div class="stitle" style="margin-bottom:24px;">Административен панел</div>
+
+      <div class="adm-sec">
+        <div class="adm-title">Потребители</div>
+        <div id="user-list"></div>
+        <div class="adm-title" style="margin-top:16px;">Нов потребител</div>
+        <div class="arow">
+          <div class="ffield" style="margin-bottom:0;"><label>Username</label><input type="text" id="new-user" placeholder="username"></div>
+          <div class="ffield" style="margin-bottom:0;"><label>Парола</label><input type="password" id="new-pass" placeholder="••••••"></div>
+          <button class="btn-submit" style="margin-top:0;padding:11px 18px;align-self:flex-end;" onclick="addUser()">Добави</button>
+        </div>
+        <div class="msg" id="user-msg"></div>
+      </div>
+
+      <div class="adm-sec">
+        <div class="adm-title">Настройки на сайта</div>
+        <div class="srow">
+          <div><div class="slabel">Заглавие</div><div class="sdesc">Показва се горе вляво</div></div>
+          <div style="display:flex;gap:8px;">
+            <input class="sinput" id="set-title">
+            <button class="btn-save-s" onclick="saveSetting('title')">Запази</button>
+          </div>
+        </div>
+        <div class="srow">
+          <div><div class="slabel">Хотели</div><div class="sdesc">Разделени със запетая</div></div>
+          <div style="display:flex;gap:8px;">
+            <input class="sinput" id="set-hotels">
+            <button class="btn-save-s" onclick="saveSetting('hotels')">Запази</button>
+          </div>
+        </div>
+        <div class="msg" id="settings-msg"></div>
+      </div>
+
+      <div class="adm-sec danger-zone">
+        <div class="adm-title">Опасна зона</div>
+        <div class="srow">
+          <div><div class="slabel">Изтрий всички записи</div><div class="sdesc">Необратимо действие</div></div>
+          <button class="btn-danger" onclick="clearAllRecords()">Изтрий всичко</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal" id="edit-modal">
+  <div class="mbox">
+    <div class="mtitle">Редактиране</div>
+    <div class="frow">
+      <div class="ffield"><label>Хотел</label><select id="e-hotel"><option value="">— Изберете —</option></select></div>
+      <div class="ffield"><label>Дата</label><input type="date" id="e-date"></div>
+    </div>
+    <div class="ffield" style="max-width:180px;"><label>Час</label><input type="time" id="e-time"></div>
+    <div class="ffield"><label>Проблем</label><textarea id="e-problem"></textarea></div>
+    <div class="ffield"><label>Причина</label><textarea id="e-cause"></textarea></div>
+    <div class="ffield"><label>Решение</label><textarea id="e-solution"></textarea></div>
+    <div class="macts">
+      <button class="mbtn-cancel" onclick="closeEdit()">Отказ</button>
+      <button class="mbtn-save" onclick="saveEdit()">Запази</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://xcnefiwfeksixtxtemgl.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_8XEI-tO-LE4TWjU4o8Wgdg_dBU8jAxl';
+const { createClient } = window.supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let editingId = null;
+let hotels = ['Бей', 'Палас', 'Маре'];
+let charts = {};
+
+/* ========== LOGIN ========== */
+async function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  err.textContent = 'Зарежда...';
+  try {
+    const { data, error } = await sb.from('users').select('*').eq('username', u).eq('password', p);
+    if (error) throw error;
+    if (data && data.length > 0) {
+      currentUser = data[0];
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      document.getElementById('user-display').textContent = currentUser.username;
+      if (currentUser.role === 'admin') document.getElementById('admin-item').style.display = 'block';
+      await loadSettings();
+      loadHistory();
+    } else {
+      err.textContent = 'Грешно потребителско име или парола.';
+    }
+  } catch (e) {
+    err.textContent = 'Грешка при свързване: ' + e.message;
+  }
+}
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').textContent = '';
+}
+
+/* ========== SETTINGS ========== */
+async function loadSettings() {
+  try {
+    const { data } = await sb.from('settings').select('*');
+    if (!data) return;
+    const t = data.find(s => s.key === 'title');
+    const h = data.find(s => s.key === 'hotels');
+    if (t) document.getElementById('topbar-title').textContent = t.value;
+    if (h) hotels = h.value.split(',').map(x => x.trim()).filter(Boolean);
+    updateHotelDropdowns();
+  } catch (e) { console.error(e); }
+}
+
+function updateHotelDropdowns() {
+  ['f-hotel', 'e-hotel', 'flt-hotel'].forEach(id => {
+    const s = document.getElementById(id);
+    if (!s) return;
+    const first = s.options[0];
+    s.innerHTML = '';
+    s.appendChild(first);
+    hotels.forEach(h => {
+      const o = document.createElement('option');
+      o.value = h; o.textContent = h;
+      s.appendChild(o);
+    });
+  });
+}
+
+/* ========== NAVIGATION ========== */
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+  if (name === 'history') loadHistory();
+  if (name === 'analysis') loadAnalysis();
+  if (name === 'admin') loadAdmin();
+}
+
+/* ========== RECORDS ========== */
+async function saveRecord() {
+  const msg = document.getElementById('save-msg');
+  const rec = {
+    hotel: document.getElementById('f-hotel').value || null,
+    date: document.getElementById('f-date').value || null,
+    time: document.getElementById('f-time').value || null,
+    problem: document.getElementById('f-problem').value.trim() || null,
+    cause: document.getElementById('f-cause').value.trim() || null,
+    solution: document.getElementById('f-solution').value.trim() || null,
+    created_by: currentUser.id
+  };
+  try {
+    const { error } = await sb.from('records').insert([rec]);
+    if (error) throw error;
+    ['f-hotel','f-date','f-time','f-problem','f-cause','f-solution'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    msg.className = 'smsg ok'; msg.textContent = '✓ Записът е запазен успешно';
+    setTimeout(() => msg.textContent = '', 3000);
+  } catch (e) {
+    msg.className = 'smsg err'; msg.textContent = 'Грешка: ' + e.message;
+  }
+}
+
+async function loadHistory() {
+  const cont = document.getElementById('hist-cont');
+  cont.innerHTML = '<div class="empty">Зарежда...</div>';
+  try {
+    let q = sb.from('records').select('*');
+    const h = document.getElementById('flt-hotel').value;
+    const from = document.getElementById('flt-from').value;
+    const to = document.getElementById('flt-to').value;
+    const search = document.getElementById('flt-search').value.toLowerCase();
+    if (h) q = q.eq('hotel', h);
+    if (from) q = q.gte('date', from);
+    if (to) q = q.lte('date', to);
+    const { data, error } = await q.order('created_at', { ascending: false });
+    if (error) throw error;
+    let recs = data || [];
+    if (search) recs = recs.filter(r => (r.hotel + r.problem + r.cause + r.solution).toLowerCase().includes(search));
+    if (recs.length === 0) { cont.innerHTML = '<div class="empty">Няма намерени записи</div>'; return; }
+    let html = '<table class="rtable"><thead><tr><th>Хотел</th><th>Дата</th><th>Час</th><th>Проблем</th><th>Причина</th><th>Решение</th><th>Действия</th></tr></thead><tbody>';
+    recs.forEach(r => {
+      const bc = r.hotel === 'Бей' ? 'b-bay' : r.hotel === 'Палас' ? 'b-pal' : 'b-mare';
+      html += `<tr>
+        <td><span class="badge ${bc}">${r.hotel || '—'}</span></td>
+        <td>${r.date || '—'}</td>
+        <td>${r.time || '—'}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.problem || '—'}</td>
+        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.cause || '—'}</td>
+        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.solution || '—'}</td>
+        <td><div class="acts"><button class="abtn" onclick="openEdit('${r.id}')">Редакция</button><button class="abtn del" onclick="delRec('${r.id}')">Изтрий</button></div></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    cont.innerHTML = html;
+  } catch (e) {
+    cont.innerHTML = '<div class="empty" style="color:var(--danger);">Грешка: ' + e.message + '</div>';
+  }
+}
+
+async function openEdit(id) {
+  try {
+    const { data: rec, error } = await sb.from('records').select('*').eq('id', id).single();
+    if (error) throw error;
+    editingId = id;
+    document.getElementById('e-hotel').value = rec.hotel || '';
+    document.getElementById('e-date').value = rec.date || '';
+    document.getElementById('e-time').value = rec.time || '';
+    document.getElementById('e-problem').value = rec.problem || '';
+    document.getElementById('e-cause').value = rec.cause || '';
+    document.getElementById('e-solution').value = rec.solution || '';
+    updateHotelDropdowns();
+    document.getElementById('e-hotel').value = rec.hotel || '';
+    document.getElementById('edit-modal').classList.add('open');
+  } catch (e) { alert('Грешка: ' + e.message); }
+}
+
+function closeEdit() {
+  document.getElementById('edit-modal').classList.remove('open');
+  editingId = null;
+}
+
+async function saveEdit() {
+  if (!editingId) return;
+  try {
+    const { error } = await sb.from('records').update({
+      hotel: document.getElementById('e-hotel').value || null,
+      date: document.getElementById('e-date').value || null,
+      time: document.getElementById('e-time').value || null,
+      problem: document.getElementById('e-problem').value.trim() || null,
+      cause: document.getElementById('e-cause').value.trim() || null,
+      solution: document.getElementById('e-solution').value.trim() || null
+    }).eq('id', editingId);
+    if (error) throw error;
+    closeEdit();
+    loadHistory();
+  } catch (e) { alert('Грешка: ' + e.message); }
+}
+
+async function delRec(id) {
+  if (!confirm('Изтриване на записа?')) return;
+  try {
+    const { error } = await sb.from('records').delete().eq('id', id);
+    if (error) throw error;
+    loadHistory();
+  } catch (e) { alert('Грешка: ' + e.message); }
+}
+
+/* ========== ANALYSIS ========== */
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+async function loadAnalysis() {
+  try {
+    const { data: recs, error } = await sb.from('records').select('*');
+    if (error) throw error;
+    const all = recs || [];
+    const now = new Date();
+    const thisMonth = now.toISOString().slice(0, 7);
+    document.getElementById('an-stats').innerHTML = `
+      <div class="an-card"><div class="an-label">Общо записи</div><div class="an-val">${all.length}</div></div>
+      <div class="an-card"><div class="an-label">Този месец</div><div class="an-val">${all.filter(r => r.date && r.date.startsWith(thisMonth)).length}</div></div>
+      <div class="an-card"><div class="an-label">С решение</div><div class="an-val">${all.filter(r => r.solution).length}</div></div>
+    `;
+    destroyChart('hotel'); destroyChart('hour'); destroyChart('days');
+    const hotelCount = {};
+    all.forEach(r => { if (r.hotel) hotelCount[r.hotel] = (hotelCount[r.hotel] || 0) + 1; });
+    charts.hotel = new Chart(document.getElementById('ch-hotel'), {
+      type: 'doughnut',
+      data: { labels: Object.keys(hotelCount), datasets: [{ data: Object.values(hotelCount), backgroundColor: ['#378ADD','#B8972E','#1D9E75'], borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#9BA8BC', font: { family: 'Jost', size: 11 }, padding: 14 } } } }
+    });
+    const hourCount = new Array(24).fill(0);
+    all.forEach(r => { if (r.time) { const h = parseInt(r.time.split(':')[0]); if (!isNaN(h)) hourCount[h]++; } });
+    charts.hour = new Chart(document.getElementById('ch-hour'), {
+      type: 'bar',
+      data: { labels: Array.from({ length: 24 }, (_, i) => i + ':00'), datasets: [{ data: hourCount, backgroundColor: 'rgba(184,151,46,.55)', borderColor: '#B8972E', borderWidth: 1 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#9BA8BC', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,.04)' } }, y: { ticks: { color: '#9BA8BC', stepSize: 1 }, grid: { color: 'rgba(255,255,255,.06)' } } } }
+    });
+    const dayMap = {};
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      dayMap[d.toISOString().slice(0, 10)] = 0;
+    }
+    all.forEach(r => { if (r.date && dayMap.hasOwnProperty(r.date)) dayMap[r.date]++; });
+    charts.days = new Chart(document.getElementById('ch-days'), {
+      type: 'line',
+      data: { labels: Object.keys(dayMap).map(d => d.slice(5)), datasets: [{ data: Object.values(dayMap), borderColor: '#B8972E', backgroundColor: 'rgba(184,151,46,.1)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#B8972E' }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#9BA8BC', font: { size: 9 }, maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,.04)' } }, y: { ticks: { color: '#9BA8BC', stepSize: 1 }, grid: { color: 'rgba(255,255,255,.06)' } } } }
+    });
+  } catch (e) { console.error(e); }
+}
+
+async function generateAI() {
+  const el = document.getElementById('ai-out');
+  const { data: recs } = await sb.from('records').select('*');
+  if (!recs || recs.length === 0) { el.innerHTML = '<span style="color:var(--muted);font-style:italic;">Няма данни за анализ.</span>'; return; }
+  el.innerHTML = '<span style="color:var(--muted);font-style:italic;">✦ AI анализира...</span>';
+  const summary = recs.map(r => `Хотел:${r.hotel||'н/а'}|Дата:${r.date||'н/а'}|Час:${r.time||'н/а'}|Проблем:${r.problem||'н/а'}|Причина:${r.cause||'н/а'}|Решение:${r.solution||'н/а'}`).join('\n');
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: `Анализирай следните данни от хотелски оплаквания и напиши кратко обобщение на български. Открий тенденции в: най-чести часове, проблеми, причини, решения. Групирай близки теми. Само текст, без HTML.\n\n${summary}` }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || 'Грешка при генериране.';
+    el.innerHTML = text.split('\n\n').map(p => `<p style="margin-bottom:12px;">${p.replace(/\n/g,'<br>')}</p>`).join('');
+  } catch (e) {
+    el.innerHTML = '<span style="color:var(--danger);">Грешка при свързване с AI.</span>';
+  }
+}
+
+/* ========== EXPORT ========== */
+async function exportWord() {
+  try {
+    const h = document.getElementById('flt-hotel').value;
+    const from = document.getElementById('flt-from').value;
+    const to = document.getElementById('flt-to').value;
+    let q = sb.from('records').select('*');
+    if (h) q = q.eq('hotel', h);
+    if (from) q = q.gte('date', from);
+    if (to) q = q.lte('date', to);
+    const { data: recs } = await q.order('created_at', { ascending: false });
+    if (!recs || recs.length === 0) { alert('Няма записи за изтегляне.'); return; }
+    const rows = recs.map(r => `<tr><td>${r.hotel||''}</td><td>${r.date||''}</td><td>${r.time||''}</td><td>${r.problem||''}</td><td>${r.cause||''}</td><td>${r.solution||''}</td></tr>`).join('');
+    const html = `<html><head><meta charset="utf-8"><style>body{font-family:Arial;font-size:11pt;}h1{color:#0A1628;}table{border-collapse:collapse;width:100%;font-size:10pt;}th{background:#0A1628;color:#B8972E;padding:8px;border:1px solid #ccc;text-align:left;}td{padding:7px 8px;border:1px solid #ddd;vertical-align:top;}tr:nth-child(even)td{background:#f9f7f2;}</style></head><body><h1>SOL by Meliá · Гост обратна връзка</h1><p style="font-size:10pt;color:#666;">${new Date().toLocaleString('bg-BG')}</p><table><thead><tr><th>Хотел</th><th>Дата</th><th>Час</th><th>Проблем</th><th>Причина</th><th>Решение</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+    const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'melia_feedback.doc'; a.click(); URL.revokeObjectURL(url);
+  } catch (e) { alert('Грешка: ' + e.message); }
+}
+
+/* ========== ADMIN ========== */
+async function loadAdmin() {
+  try {
+    const { data: users } = await sb.from('users').select('*').order('created_at');
+    const ul = document.getElementById('user-list');
+    ul.innerHTML = (users || []).map(u => `
+      <div class="user-item">
+        <div><div class="user-name">${u.username}</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="ubadge">${u.role.toUpperCase()}</span>
+          ${u.id !== currentUser.id ? `<button class="abtn del" onclick="delUser('${u.id}')">Изтрий</button>` : ''}
+        </div>
+      </div>`).join('');
+    const { data: settings } = await sb.from('settings').select('*');
+    if (settings) {
+      const t = settings.find(s => s.key === 'title');
+      const h = settings.find(s => s.key === 'hotels');
+      if (t) document.getElementById('set-title').value = t.value;
+      if (h) document.getElementById('set-hotels').value = h.value;
+    }
+  } catch (e) { console.error(e); }
+}
+
+async function addUser() {
+  const u = document.getElementById('new-user').value.trim();
+  const p = document.getElementById('new-pass').value;
+  const m = document.getElementById('user-msg');
+  if (!u || !p) { m.className = 'msg err'; m.textContent = 'Попълнете и двете полета.'; return; }
+  try {
+    const { data: exists } = await sb.from('users').select('*').eq('username', u);
+    if (exists && exists.length > 0) { m.className = 'msg err'; m.textContent = 'Потребителят вече съществува.'; return; }
+    const { error } = await sb.from('users').insert([{ username: u, password: p, role: 'user' }]);
+    if (error) throw error;
+    document.getElementById('new-user').value = '';
+    document.getElementById('new-pass').value = '';
+    m.className = 'msg ok'; m.textContent = '✓ Потребителят е добавен.';
+    loadAdmin();
+    setTimeout(() => m.textContent = '', 2500);
+  } catch (e) { m.className = 'msg err'; m.textContent = 'Грешка: ' + e.message; }
+}
+
+async function delUser(id) {
+  if (!confirm('Изтриване на потребителя?')) return;
+  try {
+    const { error } = await sb.from('users').delete().eq('id', id);
+    if (error) throw error;
+    loadAdmin();
+  } catch (e) { alert('Грешка: ' + e.message); }
+}
+
+async function saveSetting(key) {
+  const val = document.getElementById('set-' + key).value.trim();
+  const m = document.getElementById('settings-msg');
+  if (!val) return;
+  try {
+    const { data: exists } = await sb.from('settings').select('*').eq('key', key);
+    if (exists && exists.length > 0) {
+      await sb.from('settings').update({ value: val }).eq('key', key);
+    } else {
+      await sb.from('settings').insert([{ key, value: val }]);
+    }
+    if (key === 'title') document.getElementById('topbar-title').textContent = val;
+    if (key === 'hotels') { hotels = val.split(',').map(x => x.trim()).filter(Boolean); updateHotelDropdowns(); }
+    m.className = 'msg ok'; m.textContent = '✓ Запазено.';
+    setTimeout(() => m.textContent = '', 2500);
+  } catch (e) { m.className = 'msg err'; m.textContent = 'Грешка: ' + e.message; }
+}
+
+async function clearAllRecords() {
+  if (!confirm('Изтриване на ВСИЧКИ записи? Необратимо!')) return;
+  try {
+    const { error } = await sb.from('records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (error) throw error;
+    loadHistory();
+    alert('Всички записи са изтрити.');
+  } catch (e) { alert('Грешка: ' + e.message); }
+}
+</script>
+</body>
+</html>
